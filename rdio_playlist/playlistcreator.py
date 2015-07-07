@@ -1,12 +1,20 @@
-'''A Python class for creating and updating playlists based on track and artist names'''
+"""
+A Python class for creating and updating playlists based on track and artist
+names
+"""
 
-
-import shelve, re, logging, json, time
+import ConfigParser
+import os.path
+import shelve
+import re
+import logging
+import json
 from rdioapi import Rdio
 
+_PATH = os.path.dirname(os.path.realpath(__file__))
 
 def uniq(seq):
-  '''return non-duplicate items from a sequence, in order'''
+  """return non-duplicate items from a sequence, in order"""
   u = []
   for i in seq:
     if i not in u: u.append(i)
@@ -14,7 +22,10 @@ def uniq(seq):
 
 
 class Fuzzy(unicode):
-  '''a string where equality is defined as: edit distance as a percentage of the sum of the lengths of the inputs <= 25%'''
+  """
+  A string where equality is defined as: edit distance as a percentage of
+  the sum of the lengths of the inputs <= 25%
+  """
   def __eq__(self, other):
     from levenshtein_distance import levenshtein_distance as distance
     d = distance(self.lower(), other.lower())
@@ -22,9 +33,11 @@ class Fuzzy(unicode):
 
 
 class Term(unicode):
-  '''a string that knows about fuzzy matching and simple transforms'''
+  """A string that knows about fuzzy matching and simple transforms"""
+
   PAREN_RE = re.compile(r'\([^)]*\)') # remove text in parens
   FEATURE_RE = re.compile(r' (&|Feat\.|feat\.) .*') # remove & / Feat. / feat.
+
   @property
   def forms(self):
     return (self,
@@ -37,7 +50,12 @@ class Term(unicode):
 
 
 class PlaylistCreator(object):
+
   def __init__(self):
+    self._config = None
+    self._client_id = None
+    self._client_secret = None
+    self._client_callback_uri = None
     self.oauth_state = shelve.open('oauth_state')
     self.found_tracks = shelve.open('found_tracks')
 
@@ -45,11 +63,32 @@ class PlaylistCreator(object):
     self.oauth_state.close()
     self.found_tracks.close()
 
+  @property
+  def config(self):
+    if self._config is None:
+      self._config = ConfigParser.ConfigParser()
+      path = _PATH + '/../client.ini'
+      self._config.read([path, os.path.expanduser('~/.rdio-client.ini')])
+    return self._config
+
+  @property
+  def client_id(self):
+    if self._client_id is None:
+      self._client_id = self.config.get('oauth', 'client_id')
+    return self._client_id
+
+  @property
+  def client_secret(self):
+    if self._client_secret is None:
+      self._client_secret = self.config.get('oauth', 'client_secret')
+    return self._client_secret
+
   __cached_rdio = None
   @property
   def rdio(self):
     if self.__cached_rdio is None:
-      self.__cached_rdio = Rdio('7v2443fffahpt4fazmmh3hx7', '2nzyX96YAu', self.oauth_state)
+      self.__cached_rdio = Rdio(
+        self.client_id, self.client_secret, self.oauth_state)
     return self.__cached_rdio
 
   @property
@@ -58,7 +97,10 @@ class PlaylistCreator(object):
       return False
     try:
       return self.rdio.currentUser() is not None
-    except BaseException, e:
+    except BaseException as ex:
+      print ex
+      raise
+      return False
       self.rdio.logout()
       return False
 
@@ -70,12 +112,13 @@ class PlaylistCreator(object):
 
     # do a PIN based auth
     import webbrowser
-    webbrowser.open(self.rdio.begin_authentication('oob'))
-    verifier = raw_input('Enter the PIN from the Rdio site: ').strip()
-    self.rdio.complete_authentication(verifier)
+    url, device_code = self.rdio.begin_authentication()
+    print 'Please enter device code: ' + device_code
+    webbrowser.open(url)
+    self.rdio.complete_authentication()
 
   def find_track(self, artist, title):
-    '''try to find a track but apply various transfomations'''
+    """try to find a track but apply various transfomations"""
     artist = Term(artist)
     title = Term(title)
 
@@ -100,7 +143,7 @@ class PlaylistCreator(object):
       return None
 
   def make_playlist(self, name, desc, tracks):
-    '''make or update a playlist named @name, with a description @desc, with the tracks specified in @tracks, a list of (artistname, trackname) pairs'''
+    """make or update a playlist named @name, with a description @desc, with the tracks specified in @tracks, a list of (artistname, trackname) pairs"""
     tracks_meta = []
     for artistname, trackname in tracks:
       key = json.dumps((artistname, trackname)).encode('utf-8')

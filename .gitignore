@@ -1,3 +1,8 @@
 *.pyc
 .*.swp
 *.db
+found_tracks
+oauth_state
+*~
+*.bak
+client.ini

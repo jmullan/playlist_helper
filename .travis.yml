@@ -1,0 +1,24 @@
+# Travis CI configuration file
+# http://about.travis-ci.org/docs/
+
+language: python
+
+# Available Python versions:
+# http://about.travis-ci.org/docs/user/ci-environment/#Python-VM-images
+python:
+  - "2.6"
+  - "2.7"
+#  - "3.2"
+#  - "3.3"
+#  - "3.4"
+install:
+ - pip install PyYAML
+ - pip install pylint
+ - pip install pyflakes
+ - pip install pep8
+ - pip install nose
+script:
+  - pep8 rdio_playlist
+  - python --version 2>&1 | grep 2\.6\.. || pylint rdio_playlist
+  - pyflakes rdio_playlist
+  - nosetests rdio_playlist
