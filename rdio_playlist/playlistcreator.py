@@ -6,9 +6,9 @@ names
 import ConfigParser
 import os.path
 import shelve
-import re
 import logging
 import json
+import re
 from rdioapi import Rdio
 
 _PATH = os.path.dirname(os.path.realpath(__file__))
@@ -20,6 +20,8 @@ def uniq(seq):
     if i not in u: u.append(i)
   return u
 
+LOGGER = logging.getLogger(__name__)
+
 
 class Fuzzy(unicode):
   """
@@ -29,21 +31,28 @@ class Fuzzy(unicode):
   def __eq__(self, other):
     from levenshtein_distance import levenshtein_distance as distance
     d = distance(self.lower(), other.lower())
-    return int(100 * float(d) / len(self+other)) <= 25
+    denominator = float(len(self + other))
+    if denominator == 0:
+      return False
+    return int(100 * float(d) / denominator) <= 25
 
 
 class Term(unicode):
   """A string that knows about fuzzy matching and simple transforms"""
 
   PAREN_RE = re.compile(r'\([^)]*\)') # remove text in parens
-  FEATURE_RE = re.compile(r' (&|Feat\.|feat\.) .*') # remove & / Feat. / feat.
+  FEATURE_RE = re.compile(r' (&|Feat\.|feat\.|Featuring|featuring) .*') # remove & / Feat. / feat.
+  TRACK_NUM_RE = re.compile(r'^[0-9]+ ')
 
   @property
   def forms(self):
-    return (self,
-            Term.PAREN_RE.sub('', self), Term.FEATURE_RE.sub('', self),
-            self.replace('!', ' '), # for Wakey Wakey!
-            )
+    return (
+      self,
+      Term.PAREN_RE.sub('', self),
+      Term.FEATURE_RE.sub('', self),
+      self.replace('!', ' '), # for Wakey Wakey!
+    )
+
   def __eq__(self, other):
     fuzz = Fuzzy(other)
     return any((fuzz == f for f in self.forms))
@@ -113,9 +122,39 @@ class PlaylistCreator(object):
     # do a PIN based auth
     import webbrowser
     url, device_code = self.rdio.begin_authentication()
-    print 'Please enter device code: ' + device_code
+    print 'Please enter device code: %s on %s' % (device_code, url)
     webbrowser.open(url)
     self.rdio.complete_authentication()
+    print 'Successfully authenticated'
+
+  def find_album_track(self, artist, album, title):
+    """try to find a track but apply various transfomations"""
+    if album is None or album == '':
+      return self.find_track(artist, title)
+
+    artist = Term(artist)
+    album = Term(album)
+    title = Term(title)
+
+
+    # for each of the forms, search...
+    for a, r, t in uniq(zip(artist.forms, album.forms, title.forms)):
+      # query the API
+      q = ('%s %s %s' % (a, r, t)).encode('utf-8')
+      result = self.rdio.search(query=q, types='Track', never_or=True)
+
+      # if there were no results then the search failed
+      if not result['track_count']:
+        LOGGER.warning('rdio.search failed for: %s', q)
+        continue
+
+      # look through the results for a good match
+      for track in result['results']:
+        if artist == track['artist'] and title == track['name'] and (album is None or album == track['album']):
+          return track
+      # none found
+      LOGGER.warning('rdio.search succeeded but match failed: '+q)
+      return None
 
   def find_track(self, artist, title):
     """try to find a track but apply various transfomations"""
@@ -130,62 +169,86 @@ class PlaylistCreator(object):
 
       # if there were no results then the search failed
       if not result['track_count']:
-        logging.warning('  rdio.search failed for: '+q)
+        LOGGER.warning('rdio.search failed for: %s', q)
         continue
 
       # look through the results for a good match
       for track in result['results']:
-        if artist == track['artist'] and \
-            title == track['name']:
+        if artist == track['artist'] and title == track['name']:
           return track
       # none found
-      logging.warning('rdio.search succeeded but match failed: '+q)
+      LOGGER.warning('rdio.search succeeded but match failed: ' + q)
       return None
 
   def make_playlist(self, name, desc, tracks):
     """make or update a playlist named @name, with a description @desc, with the tracks specified in @tracks, a list of (artistname, trackname) pairs"""
     tracks_meta = []
-    for artistname, trackname in tracks:
-      key = json.dumps((artistname, trackname)).encode('utf-8')
-      logging.info('Looking for: %s' % key)
+    if not tracks:
+      LOGGER.warn('No tracks for playlist')
+      return
+
+    for track in tracks:
+      if len(track) == 2:
+        albumname = None
+        artistname, trackname = track
+        key = json.dumps((artistname, trackname)).encode('utf-8')
+        LOGGER.debug('Looking for: %s' % key)
+      elif len(track) == 3:
+        artistname, albumname, trackname = track
+        key = json.dumps((artistname, albumname, trackname)).encode('utf-8')
+
       if key in self.found_tracks:
-        logging.info(' found it in the cache: %s' % self.found_tracks[key]['key'])
+        LOGGER.info(' found it in the cache: %s' % self.found_tracks[key]['key'])
         tracks_meta.append(self.found_tracks[key])
       else:
-        track_meta = self.find_track(artistname, trackname)
+        track_meta = None
+        if albumname is not None:
+          track_meta = self.find_album_track(artistname, albumname, trackname)
+        if track_meta is None:
+          track_meta = self.find_track(artistname, trackname)
         if track_meta is not None:
-          logging.info(' found it in on the site: %s' % track_meta['key'])
+          LOGGER.info(' found it in on the site: %s' % track_meta['key'])
           tracks_meta.append(track_meta)
           self.found_tracks[key] = track_meta
         else:
-          logging.info(' not found')
+          LOGGER.info(' not found')
           pass
 
-    logging.info('Found %d / %d tracks' % (len(tracks_meta), len(tracks)))
+    LOGGER.info('Found %d / %d tracks' % (len(tracks_meta), len(tracks)))
 
     track_keys = [track['key'] for track in tracks_meta]
+
+    unique_track_keys = set()
+    ordered_unique_track_keys = []
+    for track_key in track_keys:
+      if track_key not in unique_track_keys:
+        unique_track_keys.add(track_key)
+        ordered_unique_track_keys.append(track_key)
 
     # ask the server for playlists
     playlists = self.rdio.getPlaylists()
     for playlist in playlists['owned']:
       # look for a playlist with the right name
       if playlist['name'] == name:
-        logging.info('Found the playlist')
+        LOGGER.info('Found the playlist')
         # when we find it, remove all of those tracks...
         playlist = self.rdio.get(keys=playlist['key'], extras='tracks')[playlist['key']]
-        keys = [t['key'] for t in playlist['tracks']]
-        self.rdio.removeFromPlaylist(playlist=playlist['key'],
-                                     index=0, count=playlist['length'],
-                                     tracks=','.join(keys))
-        # now add all of th tracks we just got
-        self.rdio.addToPlaylist(playlist=playlist['key'],
-                                tracks=','.join(track_keys))
-        logging.info('Updated the playlist')
+        playlist_keys = set([t['key'] for t in playlist['tracks']])
+        remove_keys = playlist_keys - unique_track_keys
+        if remove_keys:
+          self.rdio.removeFromPlaylist(playlist=playlist['key'],
+                                       index=0, count=playlist['length'],
+                                       tracks=','.join(remove_keys))
+        # now add all of the tracks we just got
+        add_keys = unique_track_keys - playlist_keys
+        if add_keys:
+          self.rdio.addToPlaylist(playlist=playlist['key'], tracks=','.join(add_keys))
+        LOGGER.info('Updated the playlist')
         break
     else:
       # didn't find the playlist
       # create it!
       playlist = self.rdio.createPlaylist(name=name,
                                           description=desc,
-                                          tracks=','.join(track_keys))
-      logging.info('Created the playlist')
+                                          tracks=','.join(ordered_unique_track_keys))
+      LOGGER.info('Created the playlist')
