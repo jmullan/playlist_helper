@@ -32,7 +32,7 @@ def match(regex, line):
       try:
         match[key] = matches.group(key)
       except IndexError:
-        print 'no match for ', key
+        pass
   return match
 
 
@@ -54,7 +54,6 @@ def process_txt(pc, options, filename):
   tracks = []
   for line in contents.split('\n'):
     matches = match(options['regex'], line)
-    print matches
     if matches:
       artist = matches.get('artist')
       album = matches.get('album')

@@ -145,7 +145,7 @@ class PlaylistCreator(object):
 
       # if there were no results then the search failed
       if not result['track_count']:
-        LOGGER.warning('rdio.search failed for: %s', q)
+        LOGGER.warning('rdio.search failed for: "%s"', q)
         continue
 
       # look through the results for a good match
@@ -153,7 +153,7 @@ class PlaylistCreator(object):
         if artist == track['artist'] and title == track['name'] and (album is None or album == track['album']):
           return track
       # none found
-      LOGGER.warning('rdio.search succeeded but match failed: '+q)
+      LOGGER.warning('rdio.search succeeded but match failed for "%s"', q)
       return None
 
   def find_track(self, artist, title):
@@ -177,7 +177,7 @@ class PlaylistCreator(object):
         if artist == track['artist'] and title == track['name']:
           return track
       # none found
-      LOGGER.warning('rdio.search succeeded but match failed: ' + q)
+      LOGGER.warning('rdio.search succeeded but match failed: "%s"', q)
       return None
 
   def make_playlist(self, name, desc, tracks):
