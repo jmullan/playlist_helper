@@ -21,6 +21,7 @@ sample_json = """
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def match(regex, line):
@@ -42,7 +43,10 @@ def process_txt(pc, options, filename):
     return
 
   playlist_name = os.path.splitext(os.path.basename(filename))[0]
-  playlist_description = 'Songs about %s' % playlist_name
+
+  playlist_description = options.get('description')
+  if playlist_description is None:
+    playlist_description = 'Songs about %s' % playlist_name
 
   contents = ''
   filesize = os.path.getsize(filename)
@@ -54,6 +58,7 @@ def process_txt(pc, options, filename):
   tracks = []
   for line in contents.split('\n'):
     matches = match(options['regex'], line)
+    logger.debug('%s', matches)
     if matches:
       artist = matches.get('artist')
       album = matches.get('album')
@@ -79,6 +84,7 @@ if __name__ == "__main__":
     "-r", "--regex", dest="regex",
     help="regex to match per line", default=r'(?P<artist>.*)\t(?P<album>.*)\t(?P<track>.*)'
   )
+  parser.add_option("-d", "--description", dest="description", help="The description for the playlist", default=None)
   (options, args) = parser.parse_args()
   options = options.__dict__
   main(options, args)
