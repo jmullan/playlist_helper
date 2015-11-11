@@ -368,6 +368,7 @@ class PlaylistCreator(object):
       return
 
     name = best_unicode(name)
+    desc = best_unicode(desc)
 
     # ask the server for playlists
     playlists = self.rdio.getPlaylists()
@@ -392,7 +393,7 @@ class PlaylistCreator(object):
     else:
       # didn't find the playlist
       # create it!
-      playlist = self.rdio.createPlaylist(name=name,
-                                          description=desc,
+      playlist = self.rdio.createPlaylist(name=name.encode('utf-8'),
+                                          description=desc.encode('utf-8'),
                                           tracks=','.join(ordered_unique_track_keys))
       LOGGER.info('Created the playlist')
