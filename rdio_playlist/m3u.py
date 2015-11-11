@@ -5,8 +5,8 @@ import logging
 import os
 import subprocess
 import sys
-
 from optparse import OptionParser
+
 from playlistcreator import PlaylistCreator
 
 sample = """

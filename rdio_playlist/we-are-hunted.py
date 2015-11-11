@@ -4,15 +4,18 @@ FEED = 'http://wearehunted.com/chart.rss'
 PLAYLIST_NAME = 'We Are Hunted'
 PLAYLIST_DESC = 'We Are Hunted\'s Emerging Tracks'
 
+import logging
+import sys
+
 from feedparser import parse
-import logging, sys
+from playlistcreator import PlaylistCreator
+
 logging.basicConfig(level=logging.ERROR)
 
-from playlistcreator import PlaylistCreator
 pc = PlaylistCreator()
 if not pc.authenticated:
-  print 'You need to authenticate by running ./authenticate.py first'
-  sys.exit(0)
+    print 'You need to authenticate by running ./authenticate.py first'
+    sys.exit(0)
 
 # parse the feed
 feed = parse(FEED)
