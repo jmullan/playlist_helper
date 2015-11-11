@@ -356,9 +356,10 @@ class PlaylistCreator(object):
             tracks_meta = self.get_tracks_meta(tracks)
 
         LOGGER.info('Found %d / %d tracks' % (len(tracks_meta), len(tracks)))
-
         track_keys = [track['key'] for track in tracks_meta]
+        self.make_playlist_from_keys(name, desc, track_keys)
 
+    def make_playlist_from_keys(self, name, desc, track_keys):
         ordered_unique_track_keys = uniq(track_keys)
         unique_track_keys = set(ordered_unique_track_keys)
 
