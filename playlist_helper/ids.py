@@ -18,7 +18,7 @@ def process_txt(pc, options, track_ids):
 
     track_keys = ['t%s' % track_id for track_id in track_ids]
 
-    pc.make_playlist(playlist_name, playlist_description, track_keys)
+    pc.make_playlist_from_keys(playlist_name, playlist_description, track_keys)
 
 
 def main(options, args):
@@ -28,8 +28,7 @@ def main(options, args):
         logger.error('You need to authenticate by running ./authenticate.py first')
         sys.exit(0)
 
-    for arg in args:
-        process_txt(pc, options, arg)
+    process_txt(pc, options, args)
 
 
 if __name__ == "__main__":
