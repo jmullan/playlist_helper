@@ -4,8 +4,10 @@ import ConfigParser
 import json
 import logging
 import os.path
+import pprint
 import re
 import shelve
+
 
 from levenshtein_distance import levenshtein_distance as distance
 from rdioapi import Rdio
@@ -399,11 +401,63 @@ class PlaylistCreator(object):
             LOGGER.info('Created the playlist')
 
     def list_playlists(self):
+      sample_user = {
+        u'baseIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
+        u'dynamicIcon': u'http://rdiodynimages2-a.akamaihd.net/?l=s16506-1',
+        u'firstName': u'Jesse',
+        u'gender': u'm',
+        u'icon': u'http://img00.cdn2-rdio.com/user/a/7/0/000000000000407a/1/square-100.jpg',
+        u'icon250': u'http://img00.cdn2-rdio.com/user/a/7/0/000000000000407a/1/square-250.jpg',
+        u'icon500': u'http://img00.cdn2-rdio.com/user/a/7/0/000000000000407a/1/square-500.jpg',
+        u'isProtected': None,
+        u'key': u's16506',
+        u'lastName': u'Mullan',
+        u'libraryVersion': 3591,
+        u'type': u's',
+        u'url': u'/people/jmullan/'
+      }
+
+      current_user = self.rdio.currentUser()
+      favorite_tracks = []
+      start = 0
+      while True:
+        favorites_response = self.rdio.getFavorites(types='tracksAndAlbums', extras='tracks', start=start, count=100)
+        if not favorites_response:
+          break
+        for item in favorites_response:
+          if 'tracks' not in item:
+            favorite_tracks.append(item)
+          else:
+            favorite_tracks += item['tracks']
+        start += len(favorites_response)
+
       playlist_response = self.rdio.getPlaylists()
       playlists = []
       for playlist in playlist_response['owned']:
         playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks')[playlist['key']]
         playlist['tracks'] = playlist_tracks['tracks']
         playlists.append(playlist)
-        break
+
+      fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
+
+      favorites_playlist = {
+        u'ownerKey': current_user['key'],
+        u'name': 'Favorites of %s' % fullName,
+        # u'shortUrl': u'http://rd.io/x/QB84L5Hhbw/',
+        # u'baseIcon': u'album/3/a/a/0000000000016aa3/1/square-200.jpg',
+        # u'ownerIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
+        u'owner': fullName,
+        # u'lastUpdated': 1440834342.0,
+        u'url': '%s/favorites/' % current_user['url'],
+        u'length': len(favorite_tracks),
+        # u'key': u'p13811261',
+        u'ownerUrl': current_user['url'],
+        # u'embedUrl': u'https://rd.io/e/QB84L5Hhbw/',
+        # u'icon': u'http://img00.cdn2-rdio.com/playlist/d/3/e/0000000000d2be3d/1/square-200.jpg',
+        # u'type': u'p',
+        # u'dynamicIcon': u'http://rdiodynimages1-a.akamaihd.net/?l=p13811261-1',
+        u'tracks': favorite_tracks
+      }
+
+      playlists.append(favorites_playlist)
       return playlists

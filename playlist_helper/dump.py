@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import json
 import logging
 import pprint
 import os
@@ -46,6 +47,9 @@ def convert_track(track):
     u'type': u't',
     u'url': u'/artist/Dh_Music/album/Main_Title_Song_'
   }
+
+  if 'album' not in track:
+    pprint.pprint(track)
 
   return {
     "title": track['name'],
@@ -96,7 +100,10 @@ def dump_playlist(playlist):
       ]
     }
   }
-  pprint.pprint(jspf_structure)
+
+  playlist_filename = 'dumps/%s.jspf' % playlist['url'].split('/')[-2]
+  with open(playlist_filename, 'w') as outfile:
+    json.dump(jspf_structure, outfile)
 
 
 def main(options, args):
