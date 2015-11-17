@@ -405,4 +405,5 @@ class PlaylistCreator(object):
         playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks')[playlist['key']]
         playlist['tracks'] = playlist_tracks['tracks']
         playlists.append(playlist)
+        break
       return playlists

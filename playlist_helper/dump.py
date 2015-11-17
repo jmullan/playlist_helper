@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import logging
 import pprint
+import os
 import sys
 from optparse import OptionParser
 
@@ -106,6 +107,12 @@ def main(options, args):
     sys.exit(1)
 
   playlists = pc.list_playlists()
+  if playlists:
+    try:
+      os.mkdir('dumps')
+    except OSError:
+      pass
+
   for playlist in playlists:
     dump_playlist(playlist)
 
