@@ -397,3 +397,12 @@ class PlaylistCreator(object):
                                                 description=desc.encode('utf-8'),
                                                 tracks=','.join(ordered_unique_track_keys))
             LOGGER.info('Created the playlist')
+
+    def list_playlists(self):
+      playlist_response = self.rdio.getPlaylists()
+      playlists = []
+      for playlist in playlist_response['owned']:
+        playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks')[playlist['key']]
+        playlist['tracks'] = playlist_tracks['tracks']
+        playlists.append(playlist)
+      return playlists
