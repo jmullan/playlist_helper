@@ -437,6 +437,7 @@ class PlaylistCreator(object):
         playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks')[playlist['key']]
         playlist['tracks'] = playlist_tracks['tracks']
         playlists.append(playlist)
+        print 'got', playlist['name']
 
       fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
 

@@ -59,7 +59,7 @@ def convert_track(track):
     # "image": "http://example.com/",
     "album": track['album'],
     "trackNum": track['trackNum'],
-    "duration": track['duration'] * 1000,
+    "duration": (track['duration'] or 0) * 1000,
     'meta': [
       {key: value} for key, value in track.items()
     ]
