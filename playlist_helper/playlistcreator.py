@@ -400,28 +400,17 @@ class PlaylistCreator(object):
                                                 tracks=','.join(ordered_unique_track_keys))
             LOGGER.info('Created the playlist')
 
-    def list_playlists(self, username=None, email=None):
-      sample_user = {
-        u'baseIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
-        u'dynamicIcon': u'http://rdiodynimages2-a.akamaihd.net/?l=s16506-1',
-        u'firstName': u'Jesse',
-        u'gender': u'm',
-        u'icon': u'http://img00.cdn2-rdio.com/user/a/7/0/000000000000407a/1/square-100.jpg',
-        u'icon250': u'http://img00.cdn2-rdio.com/user/a/7/0/000000000000407a/1/square-250.jpg',
-        u'icon500': u'http://img00.cdn2-rdio.com/user/a/7/0/000000000000407a/1/square-500.jpg',
-        u'isProtected': None,
-        u'key': u's16506',
-        u'lastName': u'Mullan',
-        u'libraryVersion': 3591,
-        u'type': u's',
-        u'url': u'/people/jmullan/'
-      }
-
+    def get_user(self, username=None, email=None):
       if email is not None:
-        current_user = self.rdio.findUser(email=email)
+        current_user = self.rdio.findUser(email=email, extras='vanityName')
       elif username is not None:
-        current_user = self.rdio.findUser(vanityName=username)
+        current_user = self.rdio.findUser(vanityName=username, extras='vanityName')
       else:
+        current_user = self.rdio.currentUser(extras='vanityName')
+      return current_user
+
+    def list_playlists(self, current_user=None):
+      if current_user is None:
         current_user = self.rdio.currentUser()
 
       current_user_key = current_user['key']
@@ -443,12 +432,11 @@ class PlaylistCreator(object):
         start += len(favorites_response)
 
       playlist_response = self.rdio.getPlaylists(user=current_user_key)
-      playlists = []
       for playlist in playlist_response['owned']:
         playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks,Track.isrcs')[playlist['key']]
         playlist['tracks'] = playlist_tracks['tracks']
-        playlists.append(playlist)
         print 'got', playlist['name']
+        yield playlist
 
       fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
 
@@ -471,5 +459,4 @@ class PlaylistCreator(object):
         u'tracks': favorite_tracks
       }
 
-      playlists.append(favorites_playlist)
-      return playlists
+      yield favorites_playlist
