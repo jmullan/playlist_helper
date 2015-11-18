@@ -400,7 +400,7 @@ class PlaylistCreator(object):
                                                 tracks=','.join(ordered_unique_track_keys))
             LOGGER.info('Created the playlist')
 
-    def list_playlists(self):
+    def list_playlists(self, username=None, email=None):
       sample_user = {
         u'baseIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
         u'dynamicIcon': u'http://rdiodynimages2-a.akamaihd.net/?l=s16506-1',
@@ -417,11 +417,22 @@ class PlaylistCreator(object):
         u'url': u'/people/jmullan/'
       }
 
-      current_user = self.rdio.currentUser()
+      if email is not None:
+        current_user = self.rdio.findUser(email=email)
+      elif username is not None:
+        current_user = self.rdio.findUser(vanityName=username)
+      else:
+        current_user = self.rdio.currentUser()
+
+      current_user_key = current_user['key']
+
       favorite_tracks = []
       start = 0
+
       while True:
-        favorites_response = self.rdio.getFavorites(types='tracksAndAlbums', extras='tracks,Track.isrcs', start=start, count=100)
+        favorites_response = self.rdio.getFavorites(
+          types='tracksAndAlbums', extras='tracks,Track.isrcs', start=start, count=100, user=current_user_key
+        )
         if not favorites_response:
           break
         for item in favorites_response:
@@ -431,7 +442,7 @@ class PlaylistCreator(object):
             favorite_tracks += item['tracks']
         start += len(favorites_response)
 
-      playlist_response = self.rdio.getPlaylists()
+      playlist_response = self.rdio.getPlaylists(user=current_user_key)
       playlists = []
       for playlist in playlist_response['owned']:
         playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks,Track.isrcs')[playlist['key']]
@@ -442,7 +453,7 @@ class PlaylistCreator(object):
       fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
 
       favorites_playlist = {
-        u'ownerKey': current_user['key'],
+        u'ownerKey': current_user_key,
         u'name': 'Favorites of %s' % fullName,
         # u'shortUrl': u'http://rd.io/x/QB84L5Hhbw/',
         # u'baseIcon': u'album/3/a/a/0000000000016aa3/1/square-200.jpg',

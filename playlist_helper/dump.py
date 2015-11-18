@@ -113,7 +113,7 @@ def main(options, args):
     logger.error('You need to authenticate by running `python playlist_helper/authenticate.py` first')
     sys.exit(1)
 
-  playlists = pc.list_playlists()
+  playlists = pc.list_playlists(options['username'], options['email'])
   if playlists:
     try:
       os.mkdir('dumps')
@@ -126,6 +126,14 @@ def main(options, args):
 
 if __name__ == "__main__":
     parser = OptionParser()
+    parser.add_option(
+      "-u", "--username", dest="username", default=None,
+      help="dump for USERNAME", metavar="USERNAME"
+    )
+    parser.add_option(
+      "-e", "--email", dest="email", default=None,
+      help="dump for EMAIL", metavar="EMAIL"
+    )
     (options, args) = parser.parse_args()
     options = options.__dict__
     main(options, args)
