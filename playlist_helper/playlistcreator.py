@@ -421,7 +421,7 @@ class PlaylistCreator(object):
       favorite_tracks = []
       start = 0
       while True:
-        favorites_response = self.rdio.getFavorites(types='tracksAndAlbums', extras='tracks', start=start, count=100)
+        favorites_response = self.rdio.getFavorites(types='tracksAndAlbums', extras='tracks,Track.isrcs', start=start, count=100)
         if not favorites_response:
           break
         for item in favorites_response:
@@ -434,7 +434,7 @@ class PlaylistCreator(object):
       playlist_response = self.rdio.getPlaylists()
       playlists = []
       for playlist in playlist_response['owned']:
-        playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks')[playlist['key']]
+        playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks,Track.isrcs')[playlist['key']]
         playlist['tracks'] = playlist_tracks['tracks']
         playlists.append(playlist)
         print 'got', playlist['name']

@@ -100,8 +100,8 @@ def dump_playlist(playlist):
       ]
     }
   }
-
   playlist_filename = 'dumps/%s.jspf' % playlist['url'].split('/')[-2]
+  print 'dumping %s to %s' % (playlist['name'], playlist_filename)
   with open(playlist_filename, 'w') as outfile:
     json.dump(jspf_structure, outfile)
 
