@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import codecs
 import csv
 import json
 import logging
@@ -94,6 +95,34 @@ def dump_playlist(user, playlist):
       csv_writer.writerow(track)
 
 
+def dump_comments(user, comment_data):
+  comments_filename = 'dumps/%s/comments.txt' % user['username']
+  with codecs.open(comments_filename, 'w', 'utf-8') as outfile:
+    for comment in comment_data['comments']:
+      commentedItem = comment['commentedItem']
+      commentedType = commentedItem['type']
+
+      outfile.write('Comment on "%s"' % commentedItem['name'])
+      if commentedType == 'a' or commentedType == 't':
+        outfile.write(' by %s' % commentedItem['artist'])
+      elif commentedType == 'p':
+        outfile.write(' by %s' % commentedItem['owner'])
+      outfile.write('\n')
+
+      outfile.write(comment['comment'])
+      outfile.write('\n')
+      outfile.write('posted on %s\n' % comment['datePosted'])
+
+      likeNames = [like['username'] for like in comment['likes']]
+      if likeNames:
+          outfile.write('liked by %s\n' % ', '.join(likeNames))
+
+      for reply in comment['replies']:
+        outfile.write('\t%s: %s\n' % (reply['commenter']['username'], reply['comment']))
+      outfile.write('-' * 92)
+      outfile.write('\n')
+
+
 def dump_iterable(user, name, items):
   items = list(items)
   structure = {name: items}
@@ -122,13 +151,12 @@ def main(options, args):
     exit(1)
 
   makedirs('dumps/%s' % user['username'])
-
+  dump_comments(user, pc.list_comments(user))
   dump_iterable(user, 'favorite_artists', pc.get_favorite_artists(user))
   dump_iterable(user, 'favorite_labels', pc.get_favorite_labels(user))
   dump_iterable(user, 'favorite_stations', pc.get_favorite_stations(user))
   for playlist in pc.list_playlists(user):
     dump_playlist(user, playlist)
-
 
 if __name__ == "__main__":
     parser = OptionParser()

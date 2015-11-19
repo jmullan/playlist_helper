@@ -618,3 +618,54 @@ class PlaylistCreator(object):
             yield station['name']
           if len(favorites_response) < count:
             break
+
+    def list_comments(self, current_user=None):
+      if current_user is None:
+        current_user = self.rdio.currentUser()
+
+      current_user_key = current_user['key']
+      # Testing with blurbers
+      # current_user_key = "s69538"
+      # current_user_key = "s3672998"
+
+      comment_data = {
+        'comments': []
+      }
+
+      print 'getting comments'
+      start = 0
+      count = 20
+      extras_template = '[{"field": "comments", "start": %d, "count": %d, "extras": [{"field": "commentedItem"}, {"field": "likes", "extras": "username"}]}]'
+      while True:
+        if start:
+          print start,
+          sys.stdout.flush()
+        extras = extras_template % (start, count)
+        response = self.rdio.get(keys=current_user_key, extras=extras)
+        user = response[current_user_key]
+        comment_data['comments'] += user['comments']
+        start += len(user['comments'])
+        if len(user['comments']) < count:
+          break
+      print 'got comments'
+
+      print 'getting replies to %s comments' % len(user['comments'])
+      replies_template = '[{"field": "comments", "start": %d, "count": %d, "extras": [{"field": "commenter", "extras": "username"}]}]'
+      for i, comment in enumerate(comment_data['comments']):
+        if i and not i % 10:
+          print i,
+        comment['replies'] = []
+        start = 0
+        count = 50
+        commentKey = comment['key']
+        while True:
+          if start:
+            print start,
+            sys.stdout.flush()
+          repliesResponse = self.rdio.get(keys=commentKey, extras=replies_template % (start, count))
+          comment_replies = repliesResponse[commentKey]['comments']
+          comment['replies'] += comment_replies
+          start += len(comment_replies)
+          if len(comment_replies) < count:
+            break
+      return comment_data
