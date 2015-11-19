@@ -86,6 +86,13 @@ def dump_playlist(user, playlist):
   with open(playlist_filename, 'w') as outfile:
     json.dump(jspf_structure, outfile, indent=2)
 
+  playlist_filename = '%s%s.csv' % (playlist_folder, playlist_slug(playlist['url']))
+  with open(playlist_filename, 'w') as outfile:
+    csv_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    for track in playlist['tracks']:
+      track = [track[key].encode('utf8', 'ignore') for key in ['artist', 'album', 'name']]
+      csv_writer.writerow(track)
+
 
 def dump_iterable(user, name, items):
   items = list(items)
@@ -96,8 +103,9 @@ def dump_iterable(user, name, items):
 
   filename = 'dumps/%s/%s.csv' % (user['username'], name)
   with open(filename, 'w') as outfile:
-    csv_writer = csv.writer(outfile, items, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for item in items:
+      item = item.encode('utf8', 'ignore')
       csv_writer.writerow([item])
 
 

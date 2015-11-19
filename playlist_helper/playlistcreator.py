@@ -424,6 +424,7 @@ class PlaylistCreator(object):
       start = 0
 
       while True:
+        print 'fetching', start
         if start:
           print start,
           sys.stdout.flush()
@@ -434,13 +435,13 @@ class PlaylistCreator(object):
           count=count,
           user=current_user_key
         )
-        if len(favorites_response) < count:
-          break
         for item in favorites_response:
           if 'tracks' not in item:
             favorite_tracks.append(item)
           else:
             favorite_tracks += item['tracks']
+        if len(favorites_response) < count:
+          break
         start += len(favorites_response)
 
       return {
@@ -488,13 +489,15 @@ class PlaylistCreator(object):
           count=count,
           user=current_user_key
         )
-        if len(favorites_response) < count:
-          break
+        import pprint
+        pprint.pprint(favorites_response)
         for item in favorites_response:
           if 'tracks' not in item:
             favorite_tracks.append(item)
           else:
             favorite_tracks += item['tracks']
+        if len(favorites_response) < count:
+          break
         start += len(favorites_response)
 
       return {
@@ -533,6 +536,7 @@ class PlaylistCreator(object):
       for playlist_type in ['owned', 'collab', 'favorites', 'subscribed']:
         for playlist in playlist_response.get(playlist_type, []):
           if playlist['url'] in urls:
+            print 'Skipping, already processed:', playlist['name']
             continue
           urls.add(playlist['url'])
           print 'getting', playlist_type, playlist['name']
@@ -548,9 +552,9 @@ class PlaylistCreator(object):
               extras='[{"field":"*.WEB"},{"field":"*","exclude":true},{"field":"tracks","start":%s,"count":%s,"extras":["Track.isrcs"]}]' % (
                 start, count)
             )[playlist['key']]
-            start += len(playlist_tracks['tracks'])
             if len(playlist_tracks['tracks']) < count:
               break
+            start += len(playlist_tracks['tracks'])
           playlist['tracks'] = playlist_tracks['tracks']
           print 'got', playlist_type, playlist['name']
           yield playlist
@@ -562,18 +566,19 @@ class PlaylistCreator(object):
         current_user_key = current_user['key']
 
         start = 0
+        count = 15
         while True:
           favorites_response = self.rdio.getFavorites(
             types='artists',
             start=start,
-            count=15,
+            count=count,
             user=current_user_key
           )
-          if not favorites_response:
-            break
           start += len(favorites_response)
           for artist in favorites_response:
             yield artist['name']
+          if len(favorites_response) < count:
+            break
 
     def get_favorite_labels(self, current_user):
         if current_user is None:
@@ -582,18 +587,19 @@ class PlaylistCreator(object):
         current_user_key = current_user['key']
 
         start = 0
+        count = 15
         while True:
           favorites_response = self.rdio.getFavorites(
             types='labels',
             start=start,
-            count=15,
+            count=count,
             user=current_user_key
           )
-          if not favorites_response:
-            break
           start += len(favorites_response)
           for label in favorites_response:
             yield label['name']
+          if len(favorites_response) < count:
+            break
 
     def get_favorite_stations(self, current_user):
         if current_user is None:
@@ -602,15 +608,16 @@ class PlaylistCreator(object):
         current_user_key = current_user['key']
 
         start = 0
+        count = 15
         while True:
           favorites_response = self.rdio.getFavorites(
             types='stations',
             start=start,
-            count=15,
+            count=count,
             user=current_user_key
           )
-          if not favorites_response:
-            break
           start += len(favorites_response)
           for station in favorites_response:
             yield station['name']
+          if len(favorites_response) < count:
+            break
