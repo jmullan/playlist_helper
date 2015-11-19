@@ -424,7 +424,6 @@ class PlaylistCreator(object):
       start = 0
 
       while True:
-        print 'fetching', start
         if start:
           print start,
           sys.stdout.flush()
