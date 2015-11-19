@@ -415,12 +415,41 @@ class PlaylistCreator(object):
 
       current_user_key = current_user['key']
 
+      playlist_response = self.rdio.getPlaylists(user=current_user_key)
+
+      for playlist_type in ['owned', 'collab', 'subscribed', 'favorites']:
+        for playlist in playlist_response.get(playlist_type, []):
+          print 'getting', playlist_type, playlist['name']
+          playlist['playlist_type'] = playlist_type
+          playlist['tracks'] = []
+          start = 0
+          while True:
+            count = 100
+            print 'tracks', start
+            playlist_tracks = self.rdio.get(
+              keys=playlist['key'],
+              extras='[{"field":"*.WEB"},{"field":"*","exclude":true},{"field":"tracks","start":%s,"count":%s,"extras":["Track.isrcs"]}]' % (
+                start, count)
+            )[playlist['key']]
+            start += len(playlist_tracks['tracks'])
+            if len(playlist_tracks['tracks']) < count:
+              break
+          playlist['tracks'] = playlist_tracks['tracks']
+          print 'got', playlist_type, playlist['name']
+          yield playlist
+
+      fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
+
       favorite_tracks = []
       start = 0
 
       while True:
         favorites_response = self.rdio.getFavorites(
-          types='tracksAndAlbums', extras='tracks,Track.isrcs', start=start, count=100, user=current_user_key
+          types='tracksAndAlbums',
+          extras='tracks,Track.isrcs',
+          start=start,
+          count=100,
+          user=current_user_key
         )
         if not favorites_response:
           break
@@ -430,15 +459,6 @@ class PlaylistCreator(object):
           else:
             favorite_tracks += item['tracks']
         start += len(favorites_response)
-
-      playlist_response = self.rdio.getPlaylists(user=current_user_key)
-      for playlist in playlist_response['owned']:
-        playlist_tracks = self.rdio.get(keys=playlist['key'], extras='tracks,Track.isrcs')[playlist['key']]
-        playlist['tracks'] = playlist_tracks['tracks']
-        print 'got', playlist['name']
-        yield playlist
-
-      fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
 
       favorites_playlist = {
         u'ownerKey': current_user_key,
@@ -456,7 +476,68 @@ class PlaylistCreator(object):
         # u'icon': u'http://img00.cdn2-rdio.com/playlist/d/3/e/0000000000d2be3d/1/square-200.jpg',
         # u'type': u'p',
         # u'dynamicIcon': u'http://rdiodynimages1-a.akamaihd.net/?l=p13811261-1',
-        u'tracks': favorite_tracks
+        u'tracks': favorite_tracks,
+        u'playlist_type': 'special'
       }
 
       yield favorites_playlist
+
+    def get_favorite_artists(self, current_user):
+        if current_user is None:
+          current_user = self.rdio.currentUser()
+
+        current_user_key = current_user['key']
+
+        start = 0
+        while True:
+          favorites_response = self.rdio.getFavorites(
+            types='artists',
+            start=start,
+            count=15,
+            user=current_user_key
+          )
+          if not favorites_response:
+            break
+          start += len(favorites_response)
+          for artist in favorites_response:
+            yield artist['name']
+
+    def get_favorite_labels(self, current_user):
+        if current_user is None:
+          current_user = self.rdio.currentUser()
+
+        current_user_key = current_user['key']
+
+        start = 0
+        while True:
+          favorites_response = self.rdio.getFavorites(
+            types='labels',
+            start=start,
+            count=15,
+            user=current_user_key
+          )
+          if not favorites_response:
+            break
+          start += len(favorites_response)
+          for label in favorites_response:
+            yield label['name']
+
+    def get_favorite_stations(self, current_user):
+        if current_user is None:
+          current_user = self.rdio.currentUser()
+
+        current_user_key = current_user['key']
+
+        start = 0
+        while True:
+          favorites_response = self.rdio.getFavorites(
+            types='stations',
+            start=start,
+            count=15,
+            user=current_user_key
+          )
+          if not favorites_response:
+            break
+          start += len(favorites_response)
+          for station in favorites_response:
+            yield station['name']
