@@ -59,6 +59,10 @@ def playlist_slug(playlist_url):
 
 
 def dump_playlist(user, playlist):
+  if not playlist['tracks']:
+    print 'No tracks for %s' % playlist['name']
+    return
+
   jspf_structure = {
     "playlist": {
       "title": playlist['name'],
