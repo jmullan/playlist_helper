@@ -95,7 +95,42 @@ def dump_playlist(user, playlist):
       csv_writer.writerow(track)
 
 
+def simplify_comment(comment):
+  commentedItem = comment['commentedItem']
+  commentedType = commentedItem['type']
+  if commentedType in ['a', 't']:
+    commentedItemBy = commentedItem['artist']
+  elif commentedType == 'p':
+    commentedItemBy = commentedItem['owner']
+  else:
+    commentedItemBy = None
+
+  return {
+    'on_item': {
+      'name': commentedItem['name'],
+      'by': commentedItemBy,
+    },
+    'posted': comment['datePosted'],
+    'likes': [like['username'] for like in comment['likes']],
+    'replies': [
+      (reply['commenter']['username'], reply['comment'])
+      for reply in comment['replies']
+    ]
+  }
+
+
 def dump_comments(user, comment_data):
+  json_structure = {
+    'comments': [
+      simplify_comment(comment)
+      for comment in comment_data['comments']
+    ]
+  }
+
+  comments_filename = 'dumps/%s/comments.json' % user['username']
+  with open(comments_filename, 'w') as outfile:
+    json.dump(json_structure, outfile, indent=2)
+
   comments_filename = 'dumps/%s/comments.txt' % user['username']
   with codecs.open(comments_filename, 'w', 'utf-8') as outfile:
     for comment in comment_data['comments']:

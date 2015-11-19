@@ -473,7 +473,6 @@ class PlaylistCreator(object):
       fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
 
       print 'getting downloaded / offline'
-
       favorite_tracks = []
       start = 0
 
@@ -634,7 +633,7 @@ class PlaylistCreator(object):
 
       print 'getting comments'
       start = 0
-      count = 20
+      count = 50
       extras_template = '[{"field": "comments", "start": %d, "count": %d, "extras": [{"field": "commentedItem"}, {"field": "likes", "extras": "username"}]}]'
       while True:
         if start:
@@ -649,14 +648,15 @@ class PlaylistCreator(object):
           break
       print 'got comments'
 
-      print 'getting replies to %s comments' % len(user['comments'])
+      print 'getting replies to %s comments' % len(comment_data['comments'])
       replies_template = '[{"field": "comments", "start": %d, "count": %d, "extras": [{"field": "commenter", "extras": "username"}]}]'
       for i, comment in enumerate(comment_data['comments']):
         if i and not i % 10:
           print i,
+          sys.stdout.flush()
         comment['replies'] = []
         start = 0
-        count = 50
+        count = 20
         commentKey = comment['key']
         while True:
           if start:
