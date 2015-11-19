@@ -4,9 +4,9 @@ import ConfigParser
 import json
 import logging
 import os.path
-import pprint
 import re
 import shelve
+import sys
 
 
 from levenshtein_distance import levenshtein_distance as distance
@@ -410,48 +410,31 @@ class PlaylistCreator(object):
       return current_user
 
     def list_playlists(self, current_user=None):
+      count = 100
+
       if current_user is None:
         current_user = self.rdio.currentUser()
 
       current_user_key = current_user['key']
-
-      playlist_response = self.rdio.getPlaylists(user=current_user_key)
-
-      for playlist_type in ['owned', 'collab', 'subscribed', 'favorites']:
-        for playlist in playlist_response.get(playlist_type, []):
-          print 'getting', playlist_type, playlist['name']
-          playlist['playlist_type'] = playlist_type
-          playlist['tracks'] = []
-          start = 0
-          while True:
-            count = 100
-            print 'tracks', start
-            playlist_tracks = self.rdio.get(
-              keys=playlist['key'],
-              extras='[{"field":"*.WEB"},{"field":"*","exclude":true},{"field":"tracks","start":%s,"count":%s,"extras":["Track.isrcs"]}]' % (
-                start, count)
-            )[playlist['key']]
-            start += len(playlist_tracks['tracks'])
-            if len(playlist_tracks['tracks']) < count:
-              break
-          playlist['tracks'] = playlist_tracks['tracks']
-          print 'got', playlist_type, playlist['name']
-          yield playlist
-
       fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
+
+      print 'getting favorites'
 
       favorite_tracks = []
       start = 0
 
       while True:
+        if start:
+          print start,
+          sys.stdout.flush()
         favorites_response = self.rdio.getFavorites(
           types='tracksAndAlbums',
           extras='tracks,Track.isrcs',
           start=start,
-          count=100,
+          count=count,
           user=current_user_key
         )
-        if not favorites_response:
+        if len(favorites_response) < count:
           break
         for item in favorites_response:
           if 'tracks' not in item:
@@ -468,7 +451,7 @@ class PlaylistCreator(object):
         # u'ownerIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
         u'owner': fullName,
         # u'lastUpdated': 1440834342.0,
-        u'url': '%s/favorites/' % current_user['url'],
+        u'url': '%s/playlists/%s/favorites/' % (current_user['url'], current_user['key']),
         u'length': len(favorite_tracks),
         # u'key': u'p13811261',
         u'ownerUrl': current_user['url'],
@@ -481,6 +464,34 @@ class PlaylistCreator(object):
       }
 
       yield favorites_playlist
+
+      playlist_response = self.rdio.getPlaylists(user=current_user_key)
+
+      urls = set()
+      for playlist_type in ['owned', 'collab', 'favorites', 'subscribed']:
+        for playlist in playlist_response.get(playlist_type, []):
+          if playlist['url'] in urls:
+            continue
+          urls.add(playlist['url'])
+          print 'getting', playlist_type, playlist['name']
+          playlist['playlist_type'] = playlist_type
+          playlist['tracks'] = []
+          start = 0
+          while True:
+            if start:
+              print start,
+              sys.stdout.flush()
+            playlist_tracks = self.rdio.get(
+              keys=playlist['key'],
+              extras='[{"field":"*.WEB"},{"field":"*","exclude":true},{"field":"tracks","start":%s,"count":%s,"extras":["Track.isrcs"]}]' % (
+                start, count)
+            )[playlist['key']]
+            start += len(playlist_tracks['tracks'])
+            if len(playlist_tracks['tracks']) < count:
+              break
+          playlist['tracks'] = playlist_tracks['tracks']
+          print 'got', playlist_type, playlist['name']
+          yield playlist
 
     def get_favorite_artists(self, current_user):
         if current_user is None:

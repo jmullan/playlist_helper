@@ -48,6 +48,8 @@ def playlist_slug(playlist_url):
   if matches:
     playlist_url = matches.group(1)
   else:
+    print 'FIXME' * 100
+    print 'Cannot parse url'
     print playlist_url
     exit(1)
   playlist_name = urllib.unquote(playlist_url)
@@ -71,10 +73,7 @@ def dump_playlist(user, playlist):
       ]
     }
   }
-  if playlist['playlist_type'] == 'special':
-    playlist_folder = ''
-  else:
-    playlist_folder = '%s/' % playlist['playlist_type']
+  playlist_folder = '%s/' % playlist['playlist_type']
   playlist_folder = 'dumps/%s/playlists/%s' % (user['username'], playlist_folder)
   makedirs(playlist_folder)
 
