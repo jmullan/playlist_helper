@@ -489,8 +489,6 @@ class PlaylistCreator(object):
           count=count,
           user=current_user_key
         )
-        import pprint
-        pprint.pprint(favorites_response)
         for item in favorites_response:
           if 'tracks' not in item:
             favorite_tracks.append(item)
