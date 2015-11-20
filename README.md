@@ -4,9 +4,11 @@ This uses the Rdio Python library from:
 
 - https://github.com/rdio/rdio-python
 
-    git clone git@github.com:rdio/rdio-python.git
-    cd rdio-python
-    python setup.py install
+~~~
+git clone git@github.com:rdio/rdio-python.git
+cd rdio-python
+python setup.py install
+~~~
 
 Get your dev oauth app credentials
 
