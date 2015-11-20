@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 def convert_track(track):
+    """Turn a requested track into something for jspf."""
+
     if 'album' not in track:
         pprint.pprint(track)
 
@@ -37,6 +39,7 @@ def convert_track(track):
 
 
 def makedirs(path):
+    """Wrap os.makedirs to behave like `mkdir -p`."""
     try:
         os.makedirs(path)
     except OSError:
@@ -44,6 +47,7 @@ def makedirs(path):
 
 
 def playlist_slug(playlist_url):
+    """Turn a playlist URL into a file basename."""
     # /people/leetbmc/playlists/1765046/New_Stuff_to_Listen_To/
     matches = re.search(r'playlists/[^/]+/(.*)/', playlist_url)
     if matches:
@@ -60,6 +64,7 @@ def playlist_slug(playlist_url):
 
 
 def dump_playlist(user, playlist):
+    """Given a user and playlist, dump that playlist into csv and jspf files."""
     if not playlist['tracks']:
         print 'No tracks for %s' % playlist['name']
         return
@@ -96,6 +101,7 @@ def dump_playlist(user, playlist):
 
 
 def simplify_comment(comment):
+    """Drop extraneous comment information and package it into a nicer structure."""
     commentedItem = comment['commentedItem']
     commentedType = commentedItem['type']
     if commentedType in ['a', 't']:
@@ -120,6 +126,7 @@ def simplify_comment(comment):
 
 
 def dump_comments(user, comment_data):
+    """Given a comments data structure, make a json and readable file."""
     json_structure = {
       'comments': [
         simplify_comment(comment)
@@ -159,6 +166,7 @@ def dump_comments(user, comment_data):
 
 
 def dump_iterable(user, name, items):
+    """Write an iterable to a csv and json file."""
     items = list(items)
     structure = {name: items}
     filename = 'dumps/%s/%s.json' % (user['username'], name)
@@ -174,7 +182,7 @@ def dump_iterable(user, name, items):
 
 
 def main(options, args):
-    logger.debug('Options: %s', options)
+    """Run all the things."""
     pc = PlaylistCreator()
     if not pc.authenticated:
         logger.error('You need to authenticate by running `python playlist_helper/authenticate.py` first')
