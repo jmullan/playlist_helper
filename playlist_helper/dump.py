@@ -12,6 +12,7 @@ import sys
 import urllib
 from optparse import OptionParser
 
+from contrib import xspf
 from playlistcreator import PlaylistCreator
 
 logging.basicConfig()
@@ -33,9 +34,28 @@ def convert_track(track):
       "trackNum": track['trackNum'],
       "duration": (track['duration'] or 0) * 1000,
       'meta': [
-        {key: value} for key, value in track.items()
+          {_meta('t/%s' % key): unicode(value)} for key, value in track.items()
       ]
     }
+
+
+def xspf_track(track):
+    """Instantiate and xspf.Track based on rdio data."""
+    t = convert_track(track)
+    meta = t['meta']
+    del t['meta']
+    t['trackNum'] = '%d' % t['trackNum']
+    t['duration'] = '%d' % t['duration']
+    x = xspf.Track(t)
+    # x.title = track['name']
+    # x.creator = track['artist']
+    # x.album = track['album']
+    # x.trackNum = track['trackNum']
+    # x.duration = (track['duration'] or 0) * 1000
+    for items in meta:
+        for key, value in items.items():
+            x.add_meta(key, value)
+    return x
 
 
 def makedirs(path):
@@ -63,6 +83,11 @@ def playlist_slug(playlist_url):
     return ''.join(c for c in playlist_name if c in safe_characters)
 
 
+def _meta(key):
+    """Make an arbitrary url for xspf meta fields."""
+    return 'https://rdio.com/xspf/%s' % urllib.quote(key)
+
+
 def dump_playlist(user, playlist):
     """Given a user and playlist, dump that playlist into csv and jspf files."""
     if not playlist['tracks']:
@@ -78,8 +103,8 @@ def dump_playlist(user, playlist):
           convert_track(track) for track in playlist['tracks']
         ],
         'meta': [
-          {key: value} for key, value in playlist.items()
-          if key not in ['tracks']
+            {_meta('p/%s' % key): unicode(value)} for key, value in playlist.items()
+            if key not in ['tracks']
         ]
       }
     }
@@ -87,13 +112,30 @@ def dump_playlist(user, playlist):
     playlist_folder = 'dumps/%s/playlists/%s' % (user['username'], playlist_folder)
     makedirs(playlist_folder)
 
+    x = xspf.Xspf()
+    x.title = playlist['name']
+    x.annotation = playlist.get('description', '')
+    x.creator = playlist['owner']
+    for key, value in playlist.items():
+        if key not in ['tracks']:
+            x.add_meta(_meta(key), unicode(value))
+
+    for track in playlist['tracks']:
+        xtrack = xspf_track(track)
+        x.add_track(xtrack)
+
+    playlist_filename = '%s%s.xspf' % (playlist_folder, playlist_slug(playlist['url']))
+    print 'dumping %s to %s' % (playlist['name'], playlist_filename)
+    with codecs.open(playlist_filename, 'w') as outfile:
+        outfile.write(x.toXml())
+
     playlist_filename = '%s%s.jspf' % (playlist_folder, playlist_slug(playlist['url']))
     print 'dumping %s to %s' % (playlist['name'], playlist_filename)
     with open(playlist_filename, 'w') as outfile:
         json.dump(jspf_structure, outfile, indent=2)
 
     playlist_filename = '%s%s.csv' % (playlist_folder, playlist_slug(playlist['url']))
-    with open(playlist_filename, 'w') as outfile:
+    with codecs.open(playlist_filename, 'w') as outfile:
         csv_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for track in playlist['tracks']:
             track = [track[key].encode('utf8', 'ignore') for key in ['artist', 'album', 'name']]
