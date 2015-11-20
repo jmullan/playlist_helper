@@ -459,7 +459,7 @@ class PlaylistCreator(object):
           # u'type': u'p',
           # u'dynamicIcon': u'http://rdiodynimages1-a.akamaihd.net/?l=p13811261-1',
           u'tracks': favorite_tracks,
-          u'playlist_type': 'special'
+          u'playlist_type': 'collection'
         }
 
     def get_offline_tracks(self, current_user=None):
