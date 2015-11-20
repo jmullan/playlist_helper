@@ -49,7 +49,9 @@ The exact file naming and file structure will vary, but for me, the file structu
     ├── comments.json : a computer-readable recording of all the comments I have made
     ├── comments.txt : all the comments I have made, but readable by a person
     ├── favorite_artists.csv : a list of my favorite artists, openable in excel
+    │                          if I didn't have any, this would be empty
     ├── favorite_artists.json : a list of my favorite artists, openable by computers
+    │                           if I didn't have any, this would have an empty list in it
     ├── favorite_labels.csv : a list of my favorite labels, openable in excel
     ├── favorite_labels.json : a list of my favorite labels, openable by computers
     ├── favorite_stations.csv : a list of my favorite stations, openable by computers
