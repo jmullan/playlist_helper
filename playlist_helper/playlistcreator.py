@@ -547,10 +547,12 @@ class PlaylistCreator(object):
                       extras='[{"field":"*.WEB"},{"field":"*","exclude":true},{"field":"tracks","start":%s,"count":%s,"extras":["Track.isrcs"]}]' % (
                         start, count)
                     )[playlist['key']]
+                    if not playlist_tracks or 'tracks' not in playlist_tracks:
+                        break
                     if len(playlist_tracks['tracks']) < count:
                         break
                     start += len(playlist_tracks['tracks'])
-                playlist['tracks'] = playlist_tracks['tracks']
+                    playlist['tracks'] = playlist_tracks['tracks']
                 print 'got', playlist_type, playlist['name']
                 yield playlist
 
