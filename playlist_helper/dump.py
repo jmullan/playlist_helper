@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Dumps your rdio data."""
 import codecs
 import csv
 import json
@@ -19,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 def convert_track(track):
     """Turn a requested track into something for jspf."""
-
     if 'album' not in track:
         pprint.pprint(track)
 
