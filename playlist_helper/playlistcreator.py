@@ -8,7 +8,6 @@ import re
 import shelve
 import sys
 
-
 from levenshtein_distance import levenshtein_distance as distance
 from rdioapi import Rdio
 
@@ -401,271 +400,271 @@ class PlaylistCreator(object):
             LOGGER.info('Created the playlist')
 
     def get_user(self, username=None, email=None):
-      if email is not None:
-        current_user = self.rdio.findUser(email=email, extras='vanityName')
-      elif username is not None:
-        current_user = self.rdio.findUser(vanityName=username, extras='vanityName')
-      else:
-        current_user = self.rdio.currentUser(extras='vanityName')
-      return current_user
+        if email is not None:
+            current_user = self.rdio.findUser(email=email, extras='vanityName')
+        elif username is not None:
+            current_user = self.rdio.findUser(vanityName=username, extras='vanityName')
+        else:
+            current_user = self.rdio.currentUser(extras='vanityName')
+        return current_user
 
     def get_favorites_playlist(self, current_user=None):
-      count = 100
+        count = 100
 
-      if current_user is None:
-        current_user = self.rdio.currentUser()
+        if current_user is None:
+            current_user = self.rdio.currentUser()
 
-      current_user_key = current_user['key']
-      fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
+        current_user_key = current_user['key']
+        fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
 
-      print 'getting favorites'
+        print 'getting favorites'
 
-      favorite_tracks = []
-      start = 0
+        favorite_tracks = []
+        start = 0
 
-      while True:
-        if start:
-          print start,
-          sys.stdout.flush()
-        favorites_response = self.rdio.getFavorites(
-          types='tracksAndAlbums',
-          extras='tracks,Track.isrcs',
-          start=start,
-          count=count,
-          user=current_user_key
-        )
-        for item in favorites_response:
-          if 'tracks' not in item:
-            favorite_tracks.append(item)
-          else:
-            favorite_tracks += item['tracks']
-        if len(favorites_response) < count:
-          break
-        start += len(favorites_response)
+        while True:
+            if start:
+                print start,
+                sys.stdout.flush()
+            favorites_response = self.rdio.getFavorites(
+              types='tracksAndAlbums',
+              extras='tracks,Track.isrcs',
+              start=start,
+              count=count,
+              user=current_user_key
+            )
+            for item in favorites_response:
+                if 'tracks' not in item:
+                    favorite_tracks.append(item)
+                else:
+                    favorite_tracks += item['tracks']
+            if len(favorites_response) < count:
+                break
+            start += len(favorites_response)
 
-      return {
-        u'ownerKey': current_user_key,
-        u'name': 'Favorites of %s' % fullName,
-        # u'shortUrl': u'http://rd.io/x/QB84L5Hhbw/',
-        # u'baseIcon': u'album/3/a/a/0000000000016aa3/1/square-200.jpg',
-        # u'ownerIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
-        u'owner': fullName,
-        # u'lastUpdated': 1440834342.0,
-        u'url': '%s/playlists/%s/favorites/' % (current_user['url'], current_user['key']),
-        u'length': len(favorite_tracks),
-        # u'key': u'p13811261',
-        u'ownerUrl': current_user['url'],
-        # u'embedUrl': u'https://rd.io/e/QB84L5Hhbw/',
-        # u'icon': u'http://img00.cdn2-rdio.com/playlist/d/3/e/0000000000d2be3d/1/square-200.jpg',
-        # u'type': u'p',
-        # u'dynamicIcon': u'http://rdiodynimages1-a.akamaihd.net/?l=p13811261-1',
-        u'tracks': favorite_tracks,
-        u'playlist_type': 'special'
-      }
+        return {
+          u'ownerKey': current_user_key,
+          u'name': 'Favorites of %s' % fullName,
+          # u'shortUrl': u'http://rd.io/x/QB84L5Hhbw/',
+          # u'baseIcon': u'album/3/a/a/0000000000016aa3/1/square-200.jpg',
+          # u'ownerIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
+          u'owner': fullName,
+          # u'lastUpdated': 1440834342.0,
+          u'url': '%s/playlists/%s/favorites/' % (current_user['url'], current_user['key']),
+          u'length': len(favorite_tracks),
+          # u'key': u'p13811261',
+          u'ownerUrl': current_user['url'],
+          # u'embedUrl': u'https://rd.io/e/QB84L5Hhbw/',
+          # u'icon': u'http://img00.cdn2-rdio.com/playlist/d/3/e/0000000000d2be3d/1/square-200.jpg',
+          # u'type': u'p',
+          # u'dynamicIcon': u'http://rdiodynimages1-a.akamaihd.net/?l=p13811261-1',
+          u'tracks': favorite_tracks,
+          u'playlist_type': 'special'
+        }
 
     def get_offline_tracks(self, current_user=None):
-      count = 100
+        count = 100
 
-      if current_user is None:
-        current_user = self.rdio.currentUser()
+        if current_user is None:
+            current_user = self.rdio.currentUser()
 
-      current_user_key = current_user['key']
-      fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
+        current_user_key = current_user['key']
+        fullName = '%s %s' % (current_user['firstName'], current_user['lastName'])
 
-      print 'getting downloaded / offline'
-      favorite_tracks = []
-      start = 0
+        print 'getting downloaded / offline'
+        favorite_tracks = []
+        start = 0
 
-      while True:
-        if start:
-          print start,
-          sys.stdout.flush()
-        favorites_response = self.rdio.getSynced(
-          types='tracksAndAlbums',
-          extras='tracks,Track.isrcs',
-          start=start,
-          count=count,
-          user=current_user_key
-        )
-        for item in favorites_response:
-          if 'tracks' not in item:
-            favorite_tracks.append(item)
-          else:
-            favorite_tracks += item['tracks']
-        if len(favorites_response) < count:
-          break
-        start += len(favorites_response)
+        while True:
+            if start:
+                print start,
+                sys.stdout.flush()
+            favorites_response = self.rdio.getSynced(
+              types='tracksAndAlbums',
+              extras='tracks,Track.isrcs',
+              start=start,
+              count=count,
+              user=current_user_key
+            )
+            for item in favorites_response:
+                if 'tracks' not in item:
+                    favorite_tracks.append(item)
+                else:
+                    favorite_tracks += item['tracks']
+            if len(favorites_response) < count:
+                break
+            start += len(favorites_response)
 
-      return {
-        u'ownerKey': current_user_key,
-        u'name': 'Downloaded tracks for %s' % fullName,
-        # u'shortUrl': u'http://rd.io/x/QB84L5Hhbw/',
-        # u'baseIcon': u'album/3/a/a/0000000000016aa3/1/square-200.jpg',
-        # u'ownerIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
-        u'owner': fullName,
-        # u'lastUpdated': 1440834342.0,
-        u'url': '%s/playlists/%s/downloaded/' % (current_user['url'], current_user['key']),
-        u'length': len(favorite_tracks),
-        # u'key': u'p13811261',
-        u'ownerUrl': current_user['url'],
-        # u'embedUrl': u'https://rd.io/e/QB84L5Hhbw/',
-        # u'icon': u'http://img00.cdn2-rdio.com/playlist/d/3/e/0000000000d2be3d/1/square-200.jpg',
-        # u'type': u'p',
-        # u'dynamicIcon': u'http://rdiodynimages1-a.akamaihd.net/?l=p13811261-1',
-        u'tracks': favorite_tracks,
-        u'playlist_type': 'special'
-      }
+        return {
+          u'ownerKey': current_user_key,
+          u'name': 'Downloaded tracks for %s' % fullName,
+          # u'shortUrl': u'http://rd.io/x/QB84L5Hhbw/',
+          # u'baseIcon': u'album/3/a/a/0000000000016aa3/1/square-200.jpg',
+          # u'ownerIcon': u'user/a/7/0/000000000000407a/1/square-100.jpg',
+          u'owner': fullName,
+          # u'lastUpdated': 1440834342.0,
+          u'url': '%s/playlists/%s/downloaded/' % (current_user['url'], current_user['key']),
+          u'length': len(favorite_tracks),
+          # u'key': u'p13811261',
+          u'ownerUrl': current_user['url'],
+          # u'embedUrl': u'https://rd.io/e/QB84L5Hhbw/',
+          # u'icon': u'http://img00.cdn2-rdio.com/playlist/d/3/e/0000000000d2be3d/1/square-200.jpg',
+          # u'type': u'p',
+          # u'dynamicIcon': u'http://rdiodynimages1-a.akamaihd.net/?l=p13811261-1',
+          u'tracks': favorite_tracks,
+          u'playlist_type': 'special'
+        }
 
     def list_playlists(self, current_user=None):
-      count = 100
+        count = 100
 
-      if current_user is None:
-        current_user = self.rdio.currentUser()
-      current_user_key = current_user['key']
+        if current_user is None:
+            current_user = self.rdio.currentUser()
+        current_user_key = current_user['key']
 
-      yield self.get_favorites_playlist(current_user)
-      yield self.get_offline_tracks(current_user)
+        yield self.get_favorites_playlist(current_user)
+        yield self.get_offline_tracks(current_user)
 
-      playlist_response = self.rdio.getPlaylists(user=current_user_key)
+        playlist_response = self.rdio.getPlaylists(user=current_user_key)
 
-      urls = set()
-      for playlist_type in ['owned', 'collab', 'favorites', 'subscribed']:
-        for playlist in playlist_response.get(playlist_type, []):
-          if playlist['url'] in urls:
-            print 'Skipping, already processed:', playlist['name']
-            continue
-          urls.add(playlist['url'])
-          print 'getting', playlist_type, playlist['name']
-          playlist['playlist_type'] = playlist_type
-          playlist['tracks'] = []
-          start = 0
-          while True:
-            if start:
-              print start,
-              sys.stdout.flush()
-            playlist_tracks = self.rdio.get(
-              keys=playlist['key'],
-              extras='[{"field":"*.WEB"},{"field":"*","exclude":true},{"field":"tracks","start":%s,"count":%s,"extras":["Track.isrcs"]}]' % (
-                start, count)
-            )[playlist['key']]
-            if len(playlist_tracks['tracks']) < count:
-              break
-            start += len(playlist_tracks['tracks'])
-          playlist['tracks'] = playlist_tracks['tracks']
-          print 'got', playlist_type, playlist['name']
-          yield playlist
+        urls = set()
+        for playlist_type in ['owned', 'collab', 'favorites', 'subscribed']:
+            for playlist in playlist_response.get(playlist_type, []):
+                if playlist['url'] in urls:
+                    print 'Skipping, already processed:', playlist['name']
+                    continue
+                urls.add(playlist['url'])
+                print 'getting', playlist_type, playlist['name']
+                playlist['playlist_type'] = playlist_type
+                playlist['tracks'] = []
+                start = 0
+                while True:
+                    if start:
+                        print start,
+                        sys.stdout.flush()
+                    playlist_tracks = self.rdio.get(
+                      keys=playlist['key'],
+                      extras='[{"field":"*.WEB"},{"field":"*","exclude":true},{"field":"tracks","start":%s,"count":%s,"extras":["Track.isrcs"]}]' % (
+                        start, count)
+                    )[playlist['key']]
+                    if len(playlist_tracks['tracks']) < count:
+                        break
+                    start += len(playlist_tracks['tracks'])
+                playlist['tracks'] = playlist_tracks['tracks']
+                print 'got', playlist_type, playlist['name']
+                yield playlist
 
     def get_favorite_artists(self, current_user):
         if current_user is None:
-          current_user = self.rdio.currentUser()
+            current_user = self.rdio.currentUser()
 
         current_user_key = current_user['key']
 
         start = 0
         count = 15
         while True:
-          favorites_response = self.rdio.getFavorites(
-            types='artists',
-            start=start,
-            count=count,
-            user=current_user_key
-          )
-          start += len(favorites_response)
-          for artist in favorites_response:
-            yield artist['name']
-          if len(favorites_response) < count:
-            break
+            favorites_response = self.rdio.getFavorites(
+              types='artists',
+              start=start,
+              count=count,
+              user=current_user_key
+            )
+            start += len(favorites_response)
+            for artist in favorites_response:
+                yield artist['name']
+            if len(favorites_response) < count:
+                break
 
     def get_favorite_labels(self, current_user):
         if current_user is None:
-          current_user = self.rdio.currentUser()
+            current_user = self.rdio.currentUser()
 
         current_user_key = current_user['key']
 
         start = 0
         count = 15
         while True:
-          favorites_response = self.rdio.getFavorites(
-            types='labels',
-            start=start,
-            count=count,
-            user=current_user_key
-          )
-          start += len(favorites_response)
-          for label in favorites_response:
-            yield label['name']
-          if len(favorites_response) < count:
-            break
+            favorites_response = self.rdio.getFavorites(
+              types='labels',
+              start=start,
+              count=count,
+              user=current_user_key
+            )
+            start += len(favorites_response)
+            for label in favorites_response:
+                yield label['name']
+            if len(favorites_response) < count:
+                break
 
     def get_favorite_stations(self, current_user):
         if current_user is None:
-          current_user = self.rdio.currentUser()
+            current_user = self.rdio.currentUser()
 
         current_user_key = current_user['key']
 
         start = 0
         count = 15
         while True:
-          favorites_response = self.rdio.getFavorites(
-            types='stations',
-            start=start,
-            count=count,
-            user=current_user_key
-          )
-          start += len(favorites_response)
-          for station in favorites_response:
-            yield station['name']
-          if len(favorites_response) < count:
-            break
+            favorites_response = self.rdio.getFavorites(
+              types='stations',
+              start=start,
+              count=count,
+              user=current_user_key
+            )
+            start += len(favorites_response)
+            for station in favorites_response:
+                yield station['name']
+            if len(favorites_response) < count:
+                break
 
     def list_comments(self, current_user=None):
-      if current_user is None:
-        current_user = self.rdio.currentUser()
+        if current_user is None:
+            current_user = self.rdio.currentUser()
 
-      current_user_key = current_user['key']
-      # Testing with blurbers
-      # current_user_key = "s69538"
-      # current_user_key = "s3672998"
+        current_user_key = current_user['key']
+        # Testing with blurbers
+        # current_user_key = "s69538"
+        # current_user_key = "s3672998"
 
-      comment_data = {
-        'comments': []
-      }
+        comment_data = {
+          'comments': []
+        }
 
-      print 'getting comments'
-      start = 0
-      count = 50
-      extras_template = '[{"field": "comments", "start": %d, "count": %d, "extras": [{"field": "commentedItem"}, {"field": "likes", "extras": "username"}]}]'
-      while True:
-        if start:
-          print start,
-          sys.stdout.flush()
-        extras = extras_template % (start, count)
-        response = self.rdio.get(keys=current_user_key, extras=extras)
-        user = response[current_user_key]
-        comment_data['comments'] += user['comments']
-        start += len(user['comments'])
-        if len(user['comments']) < count:
-          break
-      print 'got comments'
-
-      print 'getting replies to %s comments' % len(comment_data['comments'])
-      replies_template = '[{"field": "comments", "start": %d, "count": %d, "extras": [{"field": "commenter", "extras": "username"}]}]'
-      for i, comment in enumerate(comment_data['comments']):
-        if i and not i % 10:
-          print i,
-          sys.stdout.flush()
-        comment['replies'] = []
+        print 'getting comments'
         start = 0
-        count = 20
-        commentKey = comment['key']
+        count = 50
+        extras_template = '[{"field": "comments", "start": %d, "count": %d, "extras": [{"field": "commentedItem"}, {"field": "likes", "extras": "username"}]}]'
         while True:
-          if start:
-            print start,
-            sys.stdout.flush()
-          repliesResponse = self.rdio.get(keys=commentKey, extras=replies_template % (start, count))
-          comment_replies = repliesResponse[commentKey]['comments']
-          comment['replies'] += comment_replies
-          start += len(comment_replies)
-          if len(comment_replies) < count:
-            break
-      return comment_data
+            if start:
+                print start,
+                sys.stdout.flush()
+            extras = extras_template % (start, count)
+            response = self.rdio.get(keys=current_user_key, extras=extras)
+            user = response[current_user_key]
+            comment_data['comments'] += user['comments']
+            start += len(user['comments'])
+            if len(user['comments']) < count:
+                break
+        print 'got comments'
+
+        print 'getting replies to %s comments' % len(comment_data['comments'])
+        replies_template = '[{"field": "comments", "start": %d, "count": %d, "extras": [{"field": "commenter", "extras": "username"}]}]'
+        for i, comment in enumerate(comment_data['comments']):
+            if i and not i % 10:
+                print i,
+                sys.stdout.flush()
+            comment['replies'] = []
+            start = 0
+            count = 20
+            commentKey = comment['key']
+            while True:
+                if start:
+                    print start,
+                    sys.stdout.flush()
+                repliesResponse = self.rdio.get(keys=commentKey, extras=replies_template % (start, count))
+                comment_replies = repliesResponse[commentKey]['comments']
+                comment['replies'] += comment_replies
+                start += len(comment_replies)
+                if len(comment_replies) < count:
+                    break
+        return comment_data
