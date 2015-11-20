@@ -399,8 +399,14 @@ class PlaylistCreator(object):
                                                 tracks=','.join(ordered_unique_track_keys))
             LOGGER.info('Created the playlist')
 
-    def get_user(self, username=None, email=None):
-        if email is not None:
+    def get_user(self, username=None, email=None, uid_key=None):
+        if uid_key is not None:
+            uid_key = unicode(uid_key)
+            if uid_key[0] != 's':
+                uid_key = 's%s' % uid_key
+            current_users = self.rdio.get(keys=uid_key, extras='vanityName')
+            current_user = current_users.get(uid_key, None)
+        elif email is not None:
             current_user = self.rdio.findUser(email=email, extras='vanityName')
         elif username is not None:
             current_user = self.rdio.findUser(vanityName=username, extras='vanityName')
@@ -624,9 +630,6 @@ class PlaylistCreator(object):
             current_user = self.rdio.currentUser()
 
         current_user_key = current_user['key']
-        # Testing with blurbers
-        # current_user_key = "s69538"
-        # current_user_key = "s3672998"
 
         comment_data = {
           'comments': []

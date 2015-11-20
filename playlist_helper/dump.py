@@ -230,11 +230,14 @@ def main(options, args):
         logger.error('You need to authenticate by running `python playlist_helper/authenticate.py` first')
         sys.exit(1)
 
-    user = pc.get_user(username=options['username'], email=options['email'])
+    user = pc.get_user(
+        username=options['username'],
+        email=options['email'],
+        uid_key=options['uid_key']
+    )
     if user is None:
         print 'No user found for %s %s' % (options['username'], options['email'])
         exit(1)
-
     makedirs('dumps/%s' % user['username'])
     dump_comments(user, pc.list_comments(user))
     dump_iterable(user, 'favorite_artists', pc.get_favorite_artists(user))
@@ -252,6 +255,10 @@ if __name__ == "__main__":
     parser.add_option(
       "-e", "--email", dest="email", default=None,
       help="dump for EMAIL", metavar="EMAIL"
+    )
+    parser.add_option(
+      "--uid", dest="uid_key", default=None,
+      help="dump for UID or key", metavar="UID"
     )
     (options, args) = parser.parse_args()
     options = options.__dict__
