@@ -555,10 +555,10 @@ class PlaylistCreator(object):
                     )[playlist['key']]
                     if not playlist_tracks or 'tracks' not in playlist_tracks:
                         break
+                    playlist['tracks'] += playlist_tracks['tracks']
                     if len(playlist_tracks['tracks']) < count:
                         break
                     start += len(playlist_tracks['tracks'])
-                    playlist['tracks'] = playlist_tracks['tracks']
                 print 'got', playlist_type, playlist['name']
                 yield playlist
 
