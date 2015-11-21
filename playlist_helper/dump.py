@@ -47,11 +47,6 @@ def xspf_track(track):
     t['trackNum'] = '%d' % t['trackNum']
     t['duration'] = '%d' % t['duration']
     x = xspf.Track(t)
-    # x.title = track['name']
-    # x.creator = track['artist']
-    # x.album = track['album']
-    # x.trackNum = track['trackNum']
-    # x.duration = (track['duration'] or 0) * 1000
     for items in meta:
         for key, value in items.items():
             x.add_meta(key, value)
@@ -66,9 +61,10 @@ def makedirs(path):
         pass
 
 
-def playlist_slug(playlist_url):
+def playlist_slug(playlist):
     """Turn a playlist URL into a file basename."""
     # /people/leetbmc/playlists/1765046/New_Stuff_to_Listen_To/
+    playlist_url = playlist['url']
     matches = re.search(r'playlists/[^/]+/(.*)/', playlist_url)
     if matches:
         playlist_url = matches.group(1)
@@ -80,7 +76,9 @@ def playlist_slug(playlist_url):
     playlist_name = urllib.unquote(playlist_url)
     # playlist_name = playlist_name.decode('utf8', 'ignore')
     safe_characters = string.letters + string.digits + ' -_.'
-    return ''.join(c for c in playlist_name if c in safe_characters)
+    playlist_name = ''.join(c for c in playlist_name if c in safe_characters)
+    playlist_name = re.sub('_+', '_', playlist_name)
+    return playlist_name
 
 
 def _meta(key):
@@ -124,17 +122,26 @@ def dump_playlist(user, playlist):
         xtrack = xspf_track(track)
         x.add_track(xtrack)
 
-    playlist_filename = '%s%s.xspf' % (playlist_folder, playlist_slug(playlist['url']))
-    print 'dumping %s to %s' % (playlist['name'], playlist_filename)
+    playlist_name = playlist_slug(playlist)
+    if not playlist_name or playlist_name in user['_playlists']:
+        playlist_name = '%s__%s' % (playlist['key'], playlist_name)
+
+    user['_playlists'].add(playlist_name)
+
+    if not playlist_name:
+        print 'Could not generate playlist name for:'
+        pprint.pprint(playlist)
+        exit(1)
+
+    playlist_filename = '%s%s.xspf' % (playlist_folder, playlist_name)
     with codecs.open(playlist_filename, 'w') as outfile:
         outfile.write(x.toXml())
 
-    playlist_filename = '%s%s.jspf' % (playlist_folder, playlist_slug(playlist['url']))
-    print 'dumping %s to %s' % (playlist['name'], playlist_filename)
+    playlist_filename = '%s%s.jspf' % (playlist_folder, playlist_name)
     with open(playlist_filename, 'w') as outfile:
         json.dump(jspf_structure, outfile, indent=2)
 
-    playlist_filename = '%s%s.csv' % (playlist_folder, playlist_slug(playlist['url']))
+    playlist_filename = '%s%s.csv' % (playlist_folder, playlist_name)
     with codecs.open(playlist_filename, 'w') as outfile:
         csv_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for track in playlist['tracks']:
@@ -243,6 +250,8 @@ def main(options, args):
     dump_iterable(user, 'favorite_artists', pc.get_favorite_artists(user))
     dump_iterable(user, 'favorite_labels', pc.get_favorite_labels(user))
     dump_iterable(user, 'favorite_stations', pc.get_favorite_stations(user))
+
+    user['_playlists'] = set()
     for playlist in pc.list_playlists(user):
         dump_playlist(user, playlist)
 

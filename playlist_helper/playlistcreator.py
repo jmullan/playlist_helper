@@ -672,4 +672,5 @@ class PlaylistCreator(object):
                 start += len(comment_replies)
                 if len(comment_replies) < count:
                     break
+        print 'got replies'
         return comment_data
