@@ -134,19 +134,32 @@ def dump_playlist(user, playlist):
         exit(1)
 
     playlist_filename = '%s%s.xspf' % (playlist_folder, playlist_name)
-    with codecs.open(playlist_filename, 'w') as outfile:
-        outfile.write(x.toXml())
+    with codecs.open(playlist_filename, 'w', 'utf-8', 'ignore') as outfile:
+        xml = x.toXml().decode('utf-8', errors='ignore')
+        outfile.write(xml)
 
     playlist_filename = '%s%s.jspf' % (playlist_folder, playlist_name)
-    with open(playlist_filename, 'w') as outfile:
+    with codecs.open(playlist_filename, 'w', 'utf-8', 'ignore') as outfile:
         json.dump(jspf_structure, outfile, indent=2)
 
     playlist_filename = '%s%s.csv' % (playlist_folder, playlist_name)
-    with codecs.open(playlist_filename, 'w') as outfile:
+    with codecs.open(playlist_filename, 'w', 'utf-8', 'ignore') as outfile:
         csv_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for track in playlist['tracks']:
-            track = [track[key].encode('utf8', 'ignore') for key in ['artist', 'album', 'name']]
-            csv_writer.writerow(track)
+            track = [track[key].encode('ascii', 'ignore') for key in ['artist', 'album', 'name']]
+            try:
+                csv_writer.writerow(track)
+            except Exception:
+                print track
+                raise
+
+    playlist_filename = '%s%s.m3u' % (playlist_folder, playlist_name)
+    with codecs.open(playlist_filename, 'w', 'cp1252', 'ignore') as outfile:
+        # m3u files are supposed to be cp1252: https://en.wikipedia.org/wiki/M3U
+        outfile.write('#EXTM3U\n')
+        for track in playlist['tracks']:
+            outfile.write('#EXTINF:%s,%s - %s\n' % ((track['duration'] or 0) * 1000, track['artist'], track['name']))
+            outfile.write('%s/%s/%s - %s.mp3\n' % (track['artist'], track['album'], track['trackNum'], track['name']))
 
 
 def simplify_comment(comment):
@@ -184,7 +197,7 @@ def dump_comments(user, comment_data):
     }
 
     comments_filename = 'dumps/%s/comments.json' % user['username']
-    with open(comments_filename, 'w') as outfile:
+    with codecs.open(comments_filename, 'w', 'utf-8') as outfile:
         json.dump(json_structure, outfile, indent=2)
 
     comments_filename = 'dumps/%s/comments.txt' % user['username']
@@ -219,11 +232,11 @@ def dump_iterable(user, name, items):
     items = list(items)
     structure = {name: items}
     filename = 'dumps/%s/%s.json' % (user['username'], name)
-    with open(filename, 'w') as outfile:
+    with codecs.open(filename, 'w', 'utf-8') as outfile:
         json.dump(structure, outfile, indent=2)
 
     filename = 'dumps/%s/%s.csv' % (user['username'], name)
-    with open(filename, 'w') as outfile:
+    with codecs.open(filename, 'w', 'utf-8') as outfile:
         csv_writer = csv.writer(outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for item in items:
             item = item.encode('utf8', 'ignore')
