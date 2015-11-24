@@ -193,6 +193,7 @@ def dump_comments(user, comment_data):
       'comments': [
         simplify_comment(comment)
         for comment in comment_data['comments']
+        if comment['commentedItem'] is not None
       ]
     }
 
@@ -204,9 +205,14 @@ def dump_comments(user, comment_data):
     with codecs.open(comments_filename, 'w', 'utf-8') as outfile:
         for comment in comment_data['comments']:
             commentedItem = comment['commentedItem']
-            commentedType = commentedItem['type']
+            if commentedItem is None:
+                commentedType = '??????'
+                commentedOnName = 'a missing item.'
+            else:
+                commentedType = commentedItem['type']
+                commentedOnName = commentedItem['name']
 
-            outfile.write('Comment on "%s"' % commentedItem['name'])
+            outfile.write('Comment on "%s"' % commentedOnName)
             if commentedType == 'a' or commentedType == 't':
                 outfile.write(' by %s' % commentedItem['artist'])
             elif commentedType == 'p':
