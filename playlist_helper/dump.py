@@ -174,27 +174,28 @@ def simplify_comment(comment):
         commentedItemBy = None
 
     return {
-      'on_item': {
-        'name': commentedItem['name'],
-        'by': commentedItemBy,
-      },
-      'posted': comment['datePosted'],
-      'likes': [like['username'] for like in comment['likes']],
-      'replies': [
-        (reply['commenter']['username'], reply['comment'])
-        for reply in comment['replies']
-      ]
+        'comment': comment['comment'],
+        'on_item': {
+            'name': commentedItem['name'],
+            'by': commentedItemBy,
+        },
+        'posted': comment['datePosted'],
+        'likes': [like['username'] for like in comment['likes']],
+        'replies': [
+            (reply['commenter']['username'], reply['comment'])
+            for reply in comment['replies']
+        ]
     }
 
 
 def dump_comments(user, comment_data):
     """Given a comments data structure, make a json and readable file."""
     json_structure = {
-      'comments': [
-        simplify_comment(comment)
-        for comment in comment_data['comments']
-        if comment['commentedItem'] is not None
-      ]
+        'comments': [
+            simplify_comment(comment)
+            for comment in comment_data['comments']
+            if comment['commentedItem'] is not None
+        ]
     }
 
     comments_filename = 'dumps/%s/comments.json' % user['username']
